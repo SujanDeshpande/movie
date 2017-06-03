@@ -1,7 +1,6 @@
 package FileUtils
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"movie/Structures"
@@ -14,7 +13,7 @@ func Read(path string) {
 	}
 }
 
-func ReadToJSON(path string) {
+func ReadToJSON(path string) Structures.MovieInfo {
 	files, _ := ioutil.ReadDir(path)
 	movies := []Structures.Movie{}
 	for _, f := range files {
@@ -29,6 +28,5 @@ func ReadToJSON(path string) {
 
 	}
 	movieInfo := Structures.MovieInfo{movies}
-	str, _ := json.Marshal(movieInfo)
-	fmt.Println(string(str))
+	return movieInfo
 }
