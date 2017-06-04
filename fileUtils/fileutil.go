@@ -20,6 +20,7 @@ func ReadToJSON(path string) Structures.MovieInfo {
 
 		movie := Structures.Movie{}
 		movie.Name = f.Name()
+
 		movie.IsFolder = f.IsDir()
 		if !f.IsDir() {
 			movie.FileSize = f.Size()
