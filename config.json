@@ -1,0 +1,20 @@
+{
+  "producer": {
+    "protocol": "tcp",
+    "host": "localhost",
+    "port": "1883",
+    "clientId": "pclient",
+    "username": "admin",
+    "password": "admin",
+    "topic": "device/checkin"
+  },
+  "consumer": {
+    "protocol": "tcp",
+    "host": "localhost",
+    "port": "1883",
+    "clientId": "sclient",
+    "username": "admin",
+    "password": "admin",
+    "topic": "device/checkin"
+  }
+}

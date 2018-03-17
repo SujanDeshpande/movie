@@ -6,6 +6,7 @@ import (
 	"movie/Structures"
 )
 
+// Read - Reads file
 func Read(path string) {
 	files, _ := ioutil.ReadDir(path)
 	for _, f := range files {
@@ -13,6 +14,7 @@ func Read(path string) {
 	}
 }
 
+// ReadToJSON - Reads file  and converts to a json
 func ReadToJSON(path string) Structures.MovieInfo {
 	files, _ := ioutil.ReadDir(path)
 	movies := []Structures.Movie{}
