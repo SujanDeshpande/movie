@@ -8,6 +8,7 @@ import (
 
 //Config - Represent all the config information.
 type Config struct {
+	Port     string         `json:"port"`
 	Producer ProducerConfig `json:"producer"`
 	Consumer ConsumerConfig `json:"consumer"`
 }
@@ -57,4 +58,9 @@ func GetProducerConfig() ProducerConfig {
 //GetConsumerConfig - the configuration specific for consumer
 func GetConsumerConfig() ConsumerConfig {
 	return Configuration.Consumer
+}
+
+//GetConfig - all configurations
+func GetConfig() *Config {
+	return Configuration
 }

@@ -1,7 +1,8 @@
 package main
 
 import (
-	"activemqsupport/Handler"
+	"movie/Handler"
+	"movie/Utils"
 	"net/http"
 	"os"
 
@@ -16,8 +17,7 @@ func init() {
 
 func main() {
 	r := mux.NewRouter()
-	// Routes consist of a path and a handler function.
 	r.HandleFunc("/", Handler.HomeHandler).Methods("GET")
-	// Bind to a port and pass our router in
-	log.Fatal(http.ListenAndServe(":8000", r))
+	config := Utils.GetConfig()
+	log.Fatal(http.ListenAndServe(":"+config.Port, r))
 }
