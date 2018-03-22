@@ -3,6 +3,7 @@ package Handler
 import (
 	"html/template"
 	"math/rand"
+	"movie/MovieDB"
 	"net/http"
 	"strconv"
 
@@ -15,15 +16,18 @@ type Index struct {
 	Body  string
 }
 
-//HomeHandler is Default Landing Handler
-func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	data := &Index{
-		Title: "Image Gallery",
-		Body:  "Welcome to the image gallery.",
-	}
-	t := template.Must(template.ParseFiles("./template/welcome.tmpl"))
-	data.Title = data.Title + strconv.Itoa(rand.Intn(9999))
-	if err := t.Execute(w, data); err != nil {
-		log.Error(err)
-	}
+//HomeHandler is Default landing Handler
+func HomeHandler(db MovieDB.DB) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		db.AllMovies()
+		data := &Index{
+			Title: "Image Gallery",
+			Body:  "Welcome to the image gallery.",
+		}
+		t := template.Must(template.ParseFiles("./template/welcome.tmpl"))
+		data.Title = data.Title + strconv.Itoa(rand.Intn(9999))
+		if err := t.Execute(w, data); err != nil {
+			log.Error(err)
+		}
+	})
 }

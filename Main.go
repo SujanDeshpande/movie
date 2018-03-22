@@ -25,12 +25,8 @@ func main() {
 
 	dbase := MovieDB.DB{}
 	dbase.Bolted = db
-	movieInfo, _ := dbase.AllMovies()
-	log.Info("movieInfo")
-	log.Info(movieInfo)
-
 	r := mux.NewRouter()
-	r.HandleFunc("/", Handler.HomeHandler).Methods("GET")
+	r.Handle("/", Handler.HomeHandler(dbase)).Methods("GET")
 	config := Utils.GetConfig()
 	log.Fatal(http.ListenAndServe(":"+config.Port, r))
 }

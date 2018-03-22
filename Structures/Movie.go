@@ -5,9 +5,6 @@ type MovieInfo struct {
 }
 
 type Movie struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	newName     string `json:"newName"`
-	IsFolder bool   `json:"isFolder"`
-	FileSize int64    `json:"fileSize"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
