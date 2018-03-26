@@ -16,7 +16,7 @@ type MovieStore interface {
 	UpdateMovies(Structures.MovieInfo) error
 	DeleteMovie(string) error
 	DeleteMovies([]string) error
-	ReadMovie(string)
+	ReadMovieByID(string) error
 }
 
 //DB object for database
@@ -40,7 +40,7 @@ func (db *DB) AllMovies() (Structures.MovieInfo, error) {
 }
 
 // AddMovie Adds a single Movie
-func (db *DB) AddMovie(movie Structures.Movie) {
+func (db *DB) AddMovie(movie Structures.Movie) error {
 	db.Bolted.Update(func(tx *bolt.Tx) error {
 		movieJSON, jerr := json.Marshal(movie)
 		if jerr != nil {
@@ -67,5 +67,26 @@ func (db *DB) AddMovie(movie Structures.Movie) {
 		}).Info("Persisted")
 		return nil
 	})
+	return nil
+}
 
+//ReadMovie - read movie based on string
+func (db *DB) ReadMovie(ID string) error {
+	db.Bolted.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(Utils.GetDatabaseConfig().Bucket))
+		if bucket == nil {
+			berr := errors.New("Bucket not found")
+			log.WithError(berr).Error("Bucket not found")
+			return berr
+		}
+		movieByte := bucket.Get([]byte(ID))
+		movie := Structures.Movie{}
+		json.Unmarshal(movieByte, &movie)
+		log.WithFields(log.Fields{
+			"movieID":   movie.ID,
+			"movieName": movie.Name,
+		}).Info("Retrieved")
+		return nil
+	})
+	return nil
 }

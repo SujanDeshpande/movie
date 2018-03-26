@@ -25,6 +25,9 @@ func HomeHandler(db MovieDB.DB) http.Handler {
 		movie.ID = "1"
 		movie.Name = "Mname"
 		db.AddMovie(movie)
+		log.Info("Movie added")
+		db.ReadMovie(movie.ID)
+		log.Info("Movie read")
 		data := &Index{
 			Title: "Image Gallery",
 			Body:  "Welcome to the image gallery.",
