@@ -1,7 +1,10 @@
 package MovieDB
 
 import (
+	"encoding/json"
+	"errors"
 	"movie/Structures"
+	"movie/Utils"
 
 	"github.com/boltdb/bolt"
 	log "github.com/sirupsen/logrus"
@@ -9,20 +12,17 @@ import (
 
 // MovieStore interface for all movie DB operations
 type MovieStore interface {
-	AllMovies() (Structures.MovieInfo, error)
+	UpdateMovie(Structures.Movie) error
+	UpdateMovies(Structures.MovieInfo) error
+	DeleteMovie(string) error
+	DeleteMovies([]string) error
+	ReadMovie(string)
 }
 
 //DB object for database
 type DB struct {
+	MovieStore
 	Bolted *bolt.DB
-}
-
-func init() {
-	db, err := bolt.Open("my.db", 0600, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
 }
 
 // AllMovies return all movies
@@ -37,4 +37,35 @@ func (db *DB) AllMovies() (Structures.MovieInfo, error) {
 	log.Info("All movies")
 	log.Info(db.Bolted.Info())
 	return movieInfo, nil
+}
+
+// AddMovie Adds a single Movie
+func (db *DB) AddMovie(movie Structures.Movie) {
+	db.Bolted.Update(func(tx *bolt.Tx) error {
+		movieJSON, jerr := json.Marshal(movie)
+		if jerr != nil {
+			log.WithError(jerr).WithFields(log.Fields{
+				"movieID":   movie.ID,
+				"movieName": movie.Name,
+			}).Error("Could not create JSON")
+			return jerr
+		}
+		bucket := tx.Bucket([]byte(Utils.GetDatabaseConfig().Bucket))
+		if bucket == nil {
+			berr := errors.New("Bucket not found")
+			log.WithError(berr).Error("Bucket not found")
+			return berr
+		}
+		perr := bucket.Put([]byte(movie.ID), movieJSON)
+		if perr != nil {
+			log.WithError(perr).Error("Could not persist movie")
+			return perr
+		}
+		log.WithFields(log.Fields{
+			"movieID":   movie.ID,
+			"movieName": movie.Name,
+		}).Info("Persisted")
+		return nil
+	})
+
 }

@@ -2,6 +2,7 @@ package Utils
 
 import (
 	"encoding/json"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -9,8 +10,16 @@ import (
 //Config - Represent all the config information.
 type Config struct {
 	Port     string         `json:"port"`
+	Database DBConfig       `json:"db"`
 	Producer ProducerConfig `json:"producer"`
 	Consumer ConsumerConfig `json:"consumer"`
+}
+
+//DBConfig - Represent all the config information specific to database.
+type DBConfig struct {
+	Name       string      `json:"name"`
+	Permission os.FileMode `json:"permission"`
+	Bucket     string      `json:"bucket"`
 }
 
 //ProducerConfig - Represent all the config information specific to Producer.
@@ -58,6 +67,11 @@ func GetProducerConfig() ProducerConfig {
 //GetConsumerConfig - the configuration specific for consumer
 func GetConsumerConfig() ConsumerConfig {
 	return Configuration.Consumer
+}
+
+//GetDatabaseConfig - the configuration specific for database
+func GetDatabaseConfig() DBConfig {
+	return Configuration.Database
 }
 
 //GetConfig - all configurations

@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"math/rand"
 	"movie/MovieDB"
+	"movie/Structures"
 	"net/http"
 	"strconv"
 
@@ -20,6 +21,10 @@ type Index struct {
 func HomeHandler(db MovieDB.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		db.AllMovies()
+		movie := Structures.Movie{}
+		movie.ID = "1"
+		movie.Name = "Mname"
+		db.AddMovie(movie)
 		data := &Index{
 			Title: "Image Gallery",
 			Body:  "Welcome to the image gallery.",

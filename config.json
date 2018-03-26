@@ -1,5 +1,9 @@
 {
   "port": "8000",
+  "db": {
+    "name": "movie.db",
+    "bucket": "Movie"
+  },
   "producer": {
     "protocol": "tcp",
     "host": "localhost",
