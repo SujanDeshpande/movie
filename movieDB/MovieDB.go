@@ -12,8 +12,8 @@ import (
 
 // MovieStore interface for all movie DB operations
 type MovieStore interface {
-	UpdateMovie(Structures.Movie) error
-	UpdateMovies(Structures.MovieInfo) error
+	AddMovie(Structures.Movie) error
+	AddMovies(Structures.MovieInfo) error
 	DeleteMovie(string) error
 	DeleteMovies([]string) error
 	ReadMovieByID(string) error
@@ -21,7 +21,6 @@ type MovieStore interface {
 
 //DB object for database
 type DB struct {
-	MovieStore
 	Bolted *bolt.DB
 }
 
@@ -70,8 +69,8 @@ func (db *DB) AddMovie(movie Structures.Movie) error {
 	return nil
 }
 
-//ReadMovie - read movie based on string
-func (db *DB) ReadMovie(ID string) error {
+//ReadMovieByID - read movie based on id
+func (db *DB) ReadMovieByID(ID string) error {
 	db.Bolted.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(Utils.GetDatabaseConfig().Bucket))
 		if bucket == nil {
@@ -89,4 +88,22 @@ func (db *DB) ReadMovie(ID string) error {
 		return nil
 	})
 	return nil
+}
+
+//CreateBucket Creates a new Bucket if it does not exist
+func CreateBucket(db *bolt.DB) {
+	db.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(Utils.GetDatabaseConfig().Bucket))
+		if bucket != nil {
+			log.WithField("bucket", Utils.GetDatabaseConfig().Bucket).Info("Bucket already exists")
+		}
+		if bucket == nil {
+			_, berr := tx.CreateBucket([]byte(Utils.GetDatabaseConfig().Bucket))
+			if berr != nil {
+				log.WithError(berr).WithField("bucket", Utils.GetDatabaseConfig().Bucket).Fatal("Unable to create a bucket")
+			}
+			log.Info("Bucket created sucessfully")
+		}
+		return nil
+	})
 }

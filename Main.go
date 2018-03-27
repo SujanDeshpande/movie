@@ -23,27 +23,10 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
-	createBucket(db)
+	MovieDB.CreateBucket(db)
 	dbase := MovieDB.DB{Bolted: db}
 
 	r := mux.NewRouter()
 	r.Handle("/", Handler.HomeHandler(dbase)).Methods("GET")
 	log.Fatal(http.ListenAndServe(":"+config.Port, r))
-}
-
-func createBucket(db *bolt.DB) {
-	db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(Utils.GetDatabaseConfig().Bucket))
-		if bucket != nil {
-			log.WithField("bucket", Utils.GetDatabaseConfig().Bucket).Info("Bucket already exists")
-		}
-		if bucket == nil {
-			_, berr := tx.CreateBucket([]byte(Utils.GetDatabaseConfig().Bucket))
-			if berr != nil {
-				log.WithError(berr).WithField("bucket", Utils.GetDatabaseConfig().Bucket).Fatal("Unable to create a bucket")
-			}
-			log.Info("Bucket created sucessfully")
-		}
-		return nil
-	})
 }
