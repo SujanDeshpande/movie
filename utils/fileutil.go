@@ -1,17 +1,18 @@
 package Utils
 
 import (
-	"fmt"
 	"io/ioutil"
 	"movie/Structures"
 )
 
 // Read - Reads file
-func Read(path string) {
+func Read(path string) []string {
 	files, _ := ioutil.ReadDir(path)
+	var filenames []string
 	for _, f := range files {
-		fmt.Println(f.Name())
+		filenames = append(filenames, f.Name())
 	}
+	return filenames
 }
 
 // ReadToJSON - Reads file  and converts to a json

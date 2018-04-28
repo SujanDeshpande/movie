@@ -26,7 +26,7 @@ func HomeHandler(db MovieDB.DB) http.Handler {
 		movie.Name = "Mname"
 		db.AddMovie(movie)
 		log.Info("Movie added")
-		db.ReadMovie(movie.ID)
+		db.ReadMovieByID(movie.ID)
 		log.Info("Movie read")
 		data := &Index{
 			Title: "Image Gallery",
