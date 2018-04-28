@@ -1,20 +1,24 @@
 package main
 
 import (
+	"movie/MovieDB"
+	"movie/Utils"
+	"movie/handler"
 	"net/http"
 	"os"
 
 	"github.com/boltdb/bolt"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-
-	"movie/Handler"
-	"movie/MovieDB"
-	"movie/Utils"
 )
 
 func init() {
 	log.SetOutput(os.Stdout)
+}
+
+type filer struct {
+	Info        os.FileInfo `json:"info"`
+	Destination string      `json:"destination"`
 }
 
 func main() {
