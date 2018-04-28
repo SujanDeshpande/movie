@@ -5,11 +5,11 @@ import (
 	"errors"
 	"io/ioutil"
 	"movie/MovieDB"
+	"movie/Structures"
 	"movie/Utils"
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/boltdb/bolt"
 	log "github.com/sirupsen/logrus"
@@ -26,49 +26,39 @@ func SortHandler(db MovieDB.DB) http.Handler {
 		writeChan := writeToDB(destChan, db)
 		moveChan := moveFile(writeChan, srcFolder)
 
-		for filerq := range moveChan {
-			log.Info(filerq.ModTime)
-			filers := getFileInfoFromDB(db)
-			for _, filere := range filers {
-				log.Info("sss")
-				log.Info(filere.ModTime)
+		for fileInfoq := range moveChan {
+			log.Info(fileInfoq.ModTime)
+			fileInfos := getFileInfoFromDB(db)
+			for _, fileInfoe := range fileInfos {
+				log.Info(fileInfoe.ModTime)
 			}
 		}
 
 	})
 }
 
-func writeToDB(inChan <-chan filer, db MovieDB.DB) <-chan filer {
-	outChan := make(chan filer)
+func writeToDB(in <-chan Structures.FileInfo, db MovieDB.DB) <-chan Structures.FileInfo {
+	out := make(chan Structures.FileInfo)
 	go func() {
-		defer close(outChan)
-		for filer := range inChan {
-			addFileInfoToDB(filer, db)
-			outChan <- filer
+		defer close(out)
+		for fileInfo := range in {
+			addFileInfoToDB(fileInfo, db)
+			out <- fileInfo
 		}
 	}()
-	return outChan
-}
-
-type filer struct {
-	Name        string    `json:"name"`
-	Size        int64     `json:"size"`
-	Mode        uint32    `json:"mode"`
-	ModTime     time.Time `json:"modTime"`
-	IsDir       bool      `json:"isDir"`
-	Destination string    `json:"destination"`
+	return out
 }
 
 // AddFileInfoToDB Adds a single Movie
-func addFileInfoToDB(filer filer, db MovieDB.DB) {
+func addFileInfoToDB(fileInfo Structures.FileInfo, db MovieDB.DB) {
 	db.Bolted.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(Utils.GetDatabaseConfig().Bucket))
 		if bucket == nil {
 			berr := errors.New("Bucket not found")
 			log.WithError(berr).Error("Bucket not found")
 		}
-		jvalue, _ := json.Marshal(filer)
-		perr := bucket.Put([]byte(filer.Name), jvalue)
+		jvalue, _ := json.Marshal(fileInfo)
+		perr := bucket.Put([]byte(fileInfo.Name), jvalue)
 		if perr != nil {
 			log.WithError(perr).Error("Could not persist movie")
 		}
@@ -77,69 +67,70 @@ func addFileInfoToDB(filer filer, db MovieDB.DB) {
 }
 
 //getFileInfoFromDB - read movie based on id
-func getFileInfoFromDB(db MovieDB.DB) []filer {
-	var filers []filer
+func getFileInfoFromDB(db MovieDB.DB) []Structures.FileInfo {
+	var fileInfos []Structures.FileInfo
 	db.Bolted.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(Utils.GetDatabaseConfig().Bucket))
 		cursor := bucket.Cursor()
 		for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
-			jvalue := filer{}
+			jvalue := Structures.FileInfo{}
 			json.Unmarshal(v, &jvalue)
-			filers = append(filers, jvalue)
+			fileInfos = append(fileInfos, jvalue)
 		}
 		return nil
 	})
-	return filers
+	return fileInfos
 }
 
-func getFileInfo(srcFolder string) <-chan filer {
-	outChan := make(chan filer)
+func getFileInfo(src string) <-chan Structures.FileInfo {
+	out := make(chan Structures.FileInfo)
 	go func() {
-		defer close(outChan)
-		files, _ := ioutil.ReadDir(srcFolder)
-		for _, f := range files {
-			filerw := filer{Name: f.Name(),
-				Mode:    uint32(f.Mode()),
-				ModTime: f.ModTime(),
-				Size:    f.Size(),
-				IsDir:   f.IsDir(),
+		defer close(out)
+		files, _ := ioutil.ReadDir(src)
+		for _, file := range files {
+			fileInfo := Structures.FileInfo{Name: file.Name(),
+				Mode:    uint32(file.Mode()),
+				ModTime: file.ModTime(),
+				Size:    file.Size(),
+				IsDir:   file.IsDir(),
 			}
 
-			outChan <- filerw
+			out <- fileInfo
 		}
 
 	}()
-	return outChan
+	return out
 }
 
-func createDestination(inChan <-chan filer, dest string) <-chan filer {
-	outChan := make(chan filer)
+func createDestination(in <-chan Structures.FileInfo, dest string) <-chan Structures.FileInfo {
+	out := make(chan Structures.FileInfo)
 	go func() {
-		defer close(outChan)
-		for info := range inChan {
-			datee := info.ModTime
-			destYear := dest + strconv.Itoa(datee.Year())
+		defer close(out)
+		for fileInfo := range in {
+			fileDate := fileInfo.ModTime
+			destYear := dest + strconv.Itoa(fileDate.Year())
 			createFolder(destYear)
-			destMonth := destYear + "/" + datee.Month().String()
+			destMonth := destYear + "/" + fileDate.Month().String()
 			createFolder(destMonth)
-			info.Name = destMonth
-			outChan <- info
+			fileInfo.Location = destMonth
+			out <- fileInfo
 		}
 	}()
-	return outChan
+	return out
 }
-func moveFile(inChan <-chan filer, src string) <-chan filer {
-	outChan := make(chan filer)
+func moveFile(in <-chan Structures.FileInfo, src string) <-chan Structures.FileInfo {
+	out := make(chan Structures.FileInfo)
 	go func() {
-		defer close(outChan)
-		for filer := range inChan {
-			fromFile := src + "/" + filer.Name
-			toFile := filer.Destination + "/" + filer.Name
+		defer close(out)
+		for fileInfo := range in {
+			fromFile := src + fileInfo.Name
+			toFile := fileInfo.Location + "/" + fileInfo.Name
 			os.Rename(fromFile, toFile)
-			outChan <- filer
+			log.Info(fromFile + " Moved to " + toFile)
+			out <- fileInfo
 		}
 	}()
-	return outChan
+	return out
 }
 
 func createFolder(folderPath string) {
