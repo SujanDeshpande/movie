@@ -11,6 +11,7 @@ import (
 type Config struct {
 	Port     string         `json:"port"`
 	Database DBConfig       `json:"db"`
+	Files    Files          `json:"files"`
 	Producer ProducerConfig `json:"producer"`
 	Consumer ConsumerConfig `json:"consumer"`
 }
@@ -20,6 +21,12 @@ type DBConfig struct {
 	Name       string      `json:"name"`
 	Permission os.FileMode `json:"permission"`
 	Bucket     string      `json:"bucket"`
+}
+
+//Files - Represent all the config information specific to files.
+type Files struct {
+	Src  string `json:"src"`
+	Dest string `json:"dest"`
 }
 
 //ProducerConfig - Represent all the config information specific to Producer.

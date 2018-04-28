@@ -30,6 +30,6 @@ func main() {
 
 	r := mux.NewRouter()
 	r.Handle("/", Handler.HomeHandler(dbase)).Methods("GET")
-	r.Handle("/sort", Handler.SortHandler()).Methods("GET")
+	r.Handle("/sort", Handler.SortHandler(dbase)).Methods("GET")
 	log.Fatal(http.ListenAndServe(":"+config.Port, r))
 }

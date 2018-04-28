@@ -2,6 +2,8 @@ package Handler
 
 import (
 	"io/ioutil"
+	"movie/MovieDB"
+	"movie/Utils"
 	"net/http"
 	"os"
 	"strconv"
@@ -10,10 +12,11 @@ import (
 )
 
 //SortHandler is Default Sort API Handler
-func SortHandler() http.Handler {
+func SortHandler(db MovieDB.DB) http.Handler {
+	config := Utils.GetConfig()
+	srcFolder := config.Files.Src
+	destFolder := config.Files.Dest
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		srcFolder := "/Users/sdeshpande/SUJAN/waste/src/"
-		destFolder := "/Users/sdeshpande/SUJAN/waste/dest/"
 		infoChan := getFileInfo(srcFolder)
 		destChan := createDestination(infoChan, destFolder)
 		moveChan := moveFile(destChan, srcFolder)

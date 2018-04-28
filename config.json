@@ -4,6 +4,10 @@
     "name": "movie.db",
     "bucket": "Movie"
   },
+  "files": {
+    "src" : "/Users/sdeshpande/SUJAN/waste/src/",
+    "dest" :"/Users/sdeshpande/SUJAN/waste/dest/"
+  },
   "producer": {
     "protocol": "tcp",
     "host": "localhost",
