@@ -3,6 +3,7 @@ package main
 import (
 	"movie/MovieDB"
 	"movie/Utils"
+	"movie/files"
 	"movie/handler"
 	"net/http"
 	"os"
@@ -30,10 +31,11 @@ func main() {
 	}
 	defer db.Close()
 	MovieDB.CreateBucket(db)
+	Files.CreateFilesBucket()
 	dbase := MovieDB.DB{Bolted: db}
 
 	r := mux.NewRouter()
 	r.Handle("/", Handler.HomeHandler(dbase)).Methods("GET")
-	r.Handle("/sort", Handler.SortHandler(dbase)).Methods("GET")
+	r.Handle("/sort", Handler.SortHandler()).Methods("GET")
 	log.Fatal(http.ListenAndServe(":"+config.Port, r))
 }

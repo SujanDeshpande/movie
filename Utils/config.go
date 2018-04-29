@@ -25,8 +25,9 @@ type DBConfig struct {
 
 //Files - Represent all the config information specific to files.
 type Files struct {
-	Src  string `json:"src"`
-	Dest string `json:"dest"`
+	Src      string   `json:"src"`
+	Dest     string   `json:"dest"`
+	Database DBConfig `json:"db"`
 }
 
 //ProducerConfig - Represent all the config information specific to Producer.

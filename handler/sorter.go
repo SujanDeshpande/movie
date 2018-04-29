@@ -5,8 +5,8 @@ import (
 	"errors"
 	"io/ioutil"
 	"movie/MovieDB"
-	"movie/Structures"
 	"movie/Utils"
+	"movie/files"
 	"net/http"
 	"os"
 	"strconv"
@@ -16,33 +16,28 @@ import (
 )
 
 //SortHandler is Default Sort API Handler
-func SortHandler(db MovieDB.DB) http.Handler {
+func SortHandler() http.Handler {
 	config := Utils.GetConfig()
 	srcFolder := config.Files.Src
 	destFolder := config.Files.Dest
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		infoChan := getFileInfo(srcFolder)
 		destChan := createDestination(infoChan, destFolder)
-		writeChan := writeToDB(destChan, db)
+		writeChan := writeToDB(destChan)
 		moveChan := moveFile(writeChan, srcFolder)
 
 		for fileInfoq := range moveChan {
 			log.Info(fileInfoq.ModTime)
-			fileInfos := getFileInfoFromDB(db)
-			for _, fileInfoe := range fileInfos {
-				log.Info(fileInfoe.ModTime)
-			}
 		}
-
 	})
 }
 
-func writeToDB(in <-chan Structures.FileInfo, db MovieDB.DB) <-chan Structures.FileInfo {
-	out := make(chan Structures.FileInfo)
+func writeToDB(in <-chan Files.FileInfo) <-chan Files.FileInfo {
+	out := make(chan Files.FileInfo)
 	go func() {
 		defer close(out)
 		for fileInfo := range in {
-			addFileInfoToDB(fileInfo, db)
+			fileInfo.CreateFileInfo(&fileInfo)
 			out <- fileInfo
 		}
 	}()
@@ -50,7 +45,7 @@ func writeToDB(in <-chan Structures.FileInfo, db MovieDB.DB) <-chan Structures.F
 }
 
 // AddFileInfoToDB Adds a single Movie
-func addFileInfoToDB(fileInfo Structures.FileInfo, db MovieDB.DB) {
+func addFileInfoToDB(fileInfo Files.FileInfo, db MovieDB.DB) {
 	db.Bolted.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(Utils.GetDatabaseConfig().Bucket))
 		if bucket == nil {
@@ -67,13 +62,13 @@ func addFileInfoToDB(fileInfo Structures.FileInfo, db MovieDB.DB) {
 }
 
 //getFileInfoFromDB - read movie based on id
-func getFileInfoFromDB(db MovieDB.DB) []Structures.FileInfo {
-	var fileInfos []Structures.FileInfo
+func getFileInfoFromDB(db MovieDB.DB) []Files.FileInfo {
+	var fileInfos []Files.FileInfo
 	db.Bolted.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(Utils.GetDatabaseConfig().Bucket))
 		cursor := bucket.Cursor()
 		for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
-			jvalue := Structures.FileInfo{}
+			jvalue := Files.FileInfo{}
 			json.Unmarshal(v, &jvalue)
 			fileInfos = append(fileInfos, jvalue)
 		}
@@ -82,13 +77,13 @@ func getFileInfoFromDB(db MovieDB.DB) []Structures.FileInfo {
 	return fileInfos
 }
 
-func getFileInfo(src string) <-chan Structures.FileInfo {
-	out := make(chan Structures.FileInfo)
+func getFileInfo(src string) <-chan Files.FileInfo {
+	out := make(chan Files.FileInfo)
 	go func() {
 		defer close(out)
 		files, _ := ioutil.ReadDir(src)
 		for _, file := range files {
-			fileInfo := Structures.FileInfo{Name: file.Name(),
+			fileInfo := Files.FileInfo{Name: file.Name(),
 				Mode:    uint32(file.Mode()),
 				ModTime: file.ModTime(),
 				Size:    file.Size(),
@@ -102,8 +97,8 @@ func getFileInfo(src string) <-chan Structures.FileInfo {
 	return out
 }
 
-func createDestination(in <-chan Structures.FileInfo, dest string) <-chan Structures.FileInfo {
-	out := make(chan Structures.FileInfo)
+func createDestination(in <-chan Files.FileInfo, dest string) <-chan Files.FileInfo {
+	out := make(chan Files.FileInfo)
 	go func() {
 		defer close(out)
 		for fileInfo := range in {
@@ -118,8 +113,8 @@ func createDestination(in <-chan Structures.FileInfo, dest string) <-chan Struct
 	}()
 	return out
 }
-func moveFile(in <-chan Structures.FileInfo, src string) <-chan Structures.FileInfo {
-	out := make(chan Structures.FileInfo)
+func moveFile(in <-chan Files.FileInfo, src string) <-chan Files.FileInfo {
+	out := make(chan Files.FileInfo)
 	go func() {
 		defer close(out)
 		for fileInfo := range in {

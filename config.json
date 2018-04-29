@@ -6,7 +6,11 @@
   },
   "files": {
     "src" : "/Users/sdeshpande/SUJAN/waste/src/",
-    "dest" :"/Users/sdeshpande/SUJAN/waste/dest/"
+    "dest" :"/Users/sdeshpande/SUJAN/waste/dest/",
+    "db": {
+      "name": "files.db",
+      "bucket": "files"
+    }
   },
   "producer": {
     "protocol": "tcp",
