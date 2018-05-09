@@ -12,12 +12,13 @@ import (
 
 //FileInfo - type of FileInfo
 type FileInfo struct {
-	Name     string    `json:"name"`
-	Size     int64     `json:"size"`
-	Mode     uint32    `json:"mode"`
-	ModTime  time.Time `json:"modTime"`
-	IsDir    bool      `json:"isDir"`
-	Location string    `json:"location"`
+	Name    string    `json:"name"`
+	Size    int64     `json:"size"`
+	Mode    uint32    `json:"mode"`
+	ModTime time.Time `json:"modTime"`
+	IsDir   bool      `json:"isDir"`
+	From    string    `json:"from"`
+	To      string    `json:"to"`
 }
 
 //CreateFileInfo - CreatefileInfo
@@ -45,7 +46,7 @@ func (f FileInfo) CreateFileInfo(fileInfo *FileInfo) error {
 }
 
 //GetAllFileInfo - GetAll FileInfo
-func (f FileInfo) GetAllFileInfo() ([]FileInfo, error) {
+func GetAllFileInfo() ([]FileInfo, error) {
 	var fileInfos []FileInfo
 	config := Utils.GetConfig()
 	db, err := bolt.Open(config.Files.Database.Name, 0600, nil)
