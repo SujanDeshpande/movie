@@ -16,41 +16,45 @@ import (
 //SortHandler is Default Sort API Handler
 func SortHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		done := make(chan struct{})
-		infoChan := walkFiles(done)
-		var wg sync.WaitGroup
-		wg.Add(1)
-		destChan := make(chan Files.FileInfo)
-		go func() {
-			createDestination(infoChan, destChan, done)
-			wg.Done()
-
-		}()
-		dbChan := make(chan Files.FileInfo)
-		wg.Add(1)
-		go func() {
-			writeToDB(destChan, dbChan, done)
-			wg.Done()
-		}()
-		wg.Add(1)
-		go func() {
-			moveFile(destChan, done)
-			wg.Done()
-		}()
-		go func() {
-			wg.Wait()
-			log.Info("Wait over")
-		}()
+		buildPipe()
 		log.Info("Sent Data")
 		w.Write([]byte("\n[]byte\n\n"))
 	})
 }
 
-func walkFiles(done <-chan struct{}) <-chan Files.FileInfo {
+func buildPipe() {
+	done := make(chan struct{})
+	infoChan := walkFiles(done)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	destChan := make(chan Files.FileInfo)
+	go func() {
+		createDestination(infoChan, destChan, done)
+		wg.Done()
+
+	}()
+	dbChan := make(chan Files.FileInfo)
+	wg.Add(1)
+	go func() {
+		writeToDB(destChan, dbChan, done)
+		wg.Done()
+	}()
+	wg.Add(1)
+	go func() {
+		moveFile(destChan)
+		wg.Done()
+	}()
+	go func() {
+		wg.Wait()
+		log.Info("Processed")
+
+	}()
+}
+func walkFiles(done chan struct{}) <-chan Files.FileInfo {
 	infoChan := make(chan Files.FileInfo)
 	go func() {
 		defer close(infoChan)
-		defer log.Info("infochan closed")
+		defer close(done)
 		filepath.Walk(Utils.GetConfig().Location.Src, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
@@ -75,7 +79,6 @@ func walkFiles(done <-chan struct{}) <-chan Files.FileInfo {
 
 func createDestination(in <-chan Files.FileInfo, out chan<- Files.FileInfo, done <-chan struct{}) {
 	defer close(out)
-	defer log.Info("createDestination closed")
 	for fileInfo := range in {
 		fileDate := fileInfo.ModTime
 		destYear := Utils.GetConfig().Location.Dest + strconv.Itoa(fileDate.Year())
@@ -86,6 +89,7 @@ func createDestination(in <-chan Files.FileInfo, out chan<- Files.FileInfo, done
 		select {
 		case out <- fileInfo:
 		case <-done:
+			log.Info("closed createDestination")
 			return
 		}
 	}
@@ -93,28 +97,26 @@ func createDestination(in <-chan Files.FileInfo, out chan<- Files.FileInfo, done
 
 func writeToDB(in <-chan Files.FileInfo, out chan<- Files.FileInfo, done <-chan struct{}) {
 	defer close(out)
-	defer log.Info("writeToDB closed")
 	for fileInfo := range in {
 		fileInfo.Create(&fileInfo)
 		select {
 		case out <- fileInfo:
 		case <-done:
+			log.Info("writeToDB closed")
 			return
 		}
 	}
 }
 
-func moveFile(in <-chan Files.FileInfo, done chan<- struct{}) {
-	defer log.Info("moveFile closed")
+func moveFile(in <-chan Files.FileInfo) {
 	for fileInfo := range in {
-		log.Info(fileInfo.IsDir)
 		if !fileInfo.IsDir {
 			fromFile := fileInfo.From
 			toFile := fileInfo.To + "/" + fileInfo.Name
 			os.Rename(fromFile, toFile)
-			log.Info(fromFile + " Moved to " + toFile)
+			log.Info("Moved :" + fromFile + " to " + toFile)
 		} else {
-			log.Info(fileInfo.Name + "Not Moved")
+			log.Info(" Not Moved : " + fileInfo.Name)
 		}
 	}
 }
