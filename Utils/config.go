@@ -31,7 +31,7 @@ var Configuration = &Config{}
 
 //init - initialize the configurations.
 func init() {
-	configFile := "./config.json"
+	configFile := "./utils/config.json"
 	file, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		log.WithError(err).Error("Unable to read config file : " + configFile)
