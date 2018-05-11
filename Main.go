@@ -1,9 +1,7 @@
 package main
 
 import (
-	"movie/MovieDB"
 	"movie/Utils"
-	"movie/files"
 	"movie/handler"
 	"net/http"
 	"os"
@@ -23,19 +21,18 @@ type filer struct {
 }
 
 func main() {
-
-	config := Utils.GetConfig()
-	db, err := bolt.Open(config.Database.Name, 0600, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	MovieDB.CreateBucket(db)
-	Files.CreateFilesBucket()
-	dbase := MovieDB.DB{Bolted: db}
-
+	setupDB()
 	r := mux.NewRouter()
-	r.Handle("/", Handler.HomeHandler(dbase)).Methods("GET")
+	r.Handle("/", Handler.HomeHandler()).Methods("GET")
 	r.Handle("/sort", Handler.SortHandler()).Methods("GET")
-	log.Fatal(http.ListenAndServe(":"+config.Port, r))
+	log.Fatal(http.ListenAndServe(":"+Utils.GetConfig().Port, r))
+}
+
+func setupDB() {
+	db, _ := bolt.Open(Utils.GetConfig().Database.Name, 0600, nil)
+	db.Update(func(tx *bolt.Tx) error {
+		tx.CreateBucketIfNotExists([]byte(Utils.GetConfig().Database.Bucket))
+		return nil
+	})
+	log.Info("DB Setup Done")
 }

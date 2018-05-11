@@ -1,33 +1,11 @@
 {
   "port": "8000",
   "db": {
-    "name": "movie.db",
-    "bucket": "Movie"
+    "name": "files.db",
+    "bucket": "files"
   },
-  "files": {
+  "location": {
     "src" : "/Users/sdeshpande/SUJAN/waste/src/",
-    "dest" :"/Users/sdeshpande/SUJAN/waste/dest/",
-    "db": {
-      "name": "files.db",
-      "bucket": "files"
-    }
-  },
-  "producer": {
-    "protocol": "tcp",
-    "host": "localhost",
-    "port": "1883",
-    "clientId": "pclient",
-    "username": "admin",
-    "password": "admin",
-    "topic": "device/checkin"
-  },
-  "consumer": {
-    "protocol": "tcp",
-    "host": "localhost",
-    "port": "1883",
-    "clientId": "sclient",
-    "username": "admin",
-    "password": "admin",
-    "topic": "device/checkin"
+    "dest" :"/Users/sdeshpande/SUJAN/waste/dest/"
   }
 }

@@ -21,16 +21,15 @@ type FileInfo struct {
 	To      string    `json:"to"`
 }
 
-//CreateFileInfo - CreatefileInfo
-func (f FileInfo) CreateFileInfo(fileInfo *FileInfo) error {
-	config := Utils.GetConfig()
-	db, err := bolt.Open(config.Files.Database.Name, 0600, nil)
+//Create - CreatefileInfo
+func (f FileInfo) Create(fileInfo *FileInfo) error {
+	db, err := bolt.Open(Utils.GetConfig().Database.Name, 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 	db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(config.Files.Database.Bucket))
+		bucket := tx.Bucket([]byte(Utils.GetConfig().Database.Bucket))
 		if bucket == nil {
 			berr := errors.New("Bucket not found")
 			log.WithError(berr).Error("Bucket not found")
@@ -45,17 +44,16 @@ func (f FileInfo) CreateFileInfo(fileInfo *FileInfo) error {
 	return nil
 }
 
-//GetAllFileInfo - GetAll FileInfo
-func GetAllFileInfo() ([]FileInfo, error) {
+//GetAll - GetAll FileInfo
+func (f FileInfo) GetAll() ([]FileInfo, error) {
 	var fileInfos []FileInfo
-	config := Utils.GetConfig()
-	db, err := bolt.Open(config.Files.Database.Name, 0600, nil)
+	db, err := bolt.Open(Utils.GetConfig().Database.Name, 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 	db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(config.Files.Database.Bucket))
+		bucket := tx.Bucket([]byte(Utils.GetConfig().Database.Bucket))
 		cursor := bucket.Cursor()
 		for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
 			jvalue := FileInfo{}
@@ -67,23 +65,22 @@ func GetAllFileInfo() ([]FileInfo, error) {
 	return fileInfos, nil
 }
 
-//CreateFilesBucket Creates a new Bucket for Files if it does not exist
-func CreateFilesBucket() {
-	config := Utils.GetConfig()
-	db, err := bolt.Open(config.Files.Database.Name, 0600, nil)
+//CreateBucket Creates a new Bucket for Files if it does not exist
+func CreateBucket() {
+	db, err := bolt.Open(Utils.GetConfig().Database.Name, 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 	db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(config.Files.Database.Bucket))
+		bucket := tx.Bucket([]byte(Utils.GetConfig().Database.Bucket))
 		if bucket != nil {
-			log.WithField("bucket", config.Files.Database.Bucket).Info("Bucket already exists")
+			log.WithField("bucket", Utils.GetConfig().Database.Bucket).Info("Bucket already exists")
 		}
 		if bucket == nil {
-			_, berr := tx.CreateBucket([]byte(config.Files.Database.Bucket))
+			_, berr := tx.CreateBucket([]byte(Utils.GetConfig().Database.Bucket))
 			if berr != nil {
-				log.WithError(berr).WithField("bucket", config.Files.Database.Bucket).Fatal("Unable to create a bucket")
+				log.WithError(berr).WithField("bucket", Utils.GetConfig().Database.Bucket).Fatal("Unable to create a bucket")
 			}
 			log.Info("Bucket created sucessfully")
 		}
