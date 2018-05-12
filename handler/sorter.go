@@ -41,10 +41,11 @@ func buildPipe() {
 	}()
 	wg.Add(1)
 	go func() {
-		moveFile(destChan)
+		moveFile(dbChan)
 		wg.Done()
 	}()
 	go func() {
+		log.Info("Waiting")
 		wg.Wait()
 		log.Info("Processed")
 
@@ -54,7 +55,7 @@ func walkFiles(done chan struct{}) <-chan Files.FileInfo {
 	infoChan := make(chan Files.FileInfo)
 	go func() {
 		defer close(infoChan)
-		defer close(done)
+		defer log.Info("infoChan")
 		filepath.Walk(Utils.GetConfig().Location.Src, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
@@ -78,7 +79,6 @@ func walkFiles(done chan struct{}) <-chan Files.FileInfo {
 }
 
 func createDestination(in <-chan Files.FileInfo, out chan<- Files.FileInfo, done <-chan struct{}) {
-	defer close(out)
 	for fileInfo := range in {
 		fileDate := fileInfo.ModTime
 		destYear := Utils.GetConfig().Location.Dest + strconv.Itoa(fileDate.Year())
@@ -93,12 +93,13 @@ func createDestination(in <-chan Files.FileInfo, out chan<- Files.FileInfo, done
 			return
 		}
 	}
+	close(out)
+	log.Info("createDestination")
 }
 
 func writeToDB(in <-chan Files.FileInfo, out chan<- Files.FileInfo, done <-chan struct{}) {
-	defer close(out)
 	for fileInfo := range in {
-		fileInfo.Create(&fileInfo)
+		//	fileInfo.Create(&fileInfo)
 		select {
 		case out <- fileInfo:
 		case <-done:
@@ -106,6 +107,8 @@ func writeToDB(in <-chan Files.FileInfo, out chan<- Files.FileInfo, done <-chan 
 			return
 		}
 	}
+	close(out)
+	log.Info("writeToDB")
 }
 
 func moveFile(in <-chan Files.FileInfo) {
@@ -119,6 +122,7 @@ func moveFile(in <-chan Files.FileInfo) {
 			log.Info(" Not Moved : " + fileInfo.Name)
 		}
 	}
+	log.Info("moveFile")
 }
 
 func createFolder(folderPath string) {
