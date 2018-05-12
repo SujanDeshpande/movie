@@ -1,9 +1,10 @@
-package Files
+package files
 
 import (
 	"encoding/json"
 	"errors"
-	"movie/Utils"
+	"movie/database"
+	"movie/utils"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -23,13 +24,8 @@ type FileInfo struct {
 
 //Create - CreatefileInfo
 func (f FileInfo) Create(fileInfo *FileInfo) error {
-	db, err := bolt.Open(Utils.GetConfig().Database.Name, 0600, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(Utils.GetConfig().Database.Bucket))
+	database.DBCon.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(utils.GetConfig().Database.Bucket))
 		if bucket == nil {
 			berr := errors.New("Bucket not found")
 			log.WithError(berr).Error("Bucket not found")
@@ -47,13 +43,8 @@ func (f FileInfo) Create(fileInfo *FileInfo) error {
 //GetAll - GetAll FileInfo
 func (f FileInfo) GetAll() ([]FileInfo, error) {
 	var fileInfos []FileInfo
-	db, err := bolt.Open(Utils.GetConfig().Database.Name, 0600, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(Utils.GetConfig().Database.Bucket))
+	database.DBCon.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(utils.GetConfig().Database.Bucket))
 		cursor := bucket.Cursor()
 		for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
 			jvalue := FileInfo{}
@@ -63,27 +54,4 @@ func (f FileInfo) GetAll() ([]FileInfo, error) {
 		return nil
 	})
 	return fileInfos, nil
-}
-
-//CreateBucket Creates a new Bucket for Files if it does not exist
-func CreateBucket() {
-	db, err := bolt.Open(Utils.GetConfig().Database.Name, 0600, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(Utils.GetConfig().Database.Bucket))
-		if bucket != nil {
-			log.WithField("bucket", Utils.GetConfig().Database.Bucket).Info("Bucket already exists")
-		}
-		if bucket == nil {
-			_, berr := tx.CreateBucket([]byte(Utils.GetConfig().Database.Bucket))
-			if berr != nil {
-				log.WithError(berr).WithField("bucket", Utils.GetConfig().Database.Bucket).Fatal("Unable to create a bucket")
-			}
-			log.Info("Bucket created sucessfully")
-		}
-		return nil
-	})
 }

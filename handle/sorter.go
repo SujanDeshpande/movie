@@ -1,10 +1,9 @@
-package Handler
+package handle
 
 import (
 	"errors"
-	"movie/Utils"
 	"movie/files"
-	"net/http"
+	"movie/utils"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -13,27 +12,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//SortHandler is Default Sort API Handler
-func SortHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		buildPipe()
-		log.Info("Sent Data")
-		w.Write([]byte("\n[]byte\n\n"))
-	})
-}
-
 func buildPipe() {
 	done := make(chan struct{})
-	infoChan := walkFiles(done)
+	infoChan := walkfiles(done)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	destChan := make(chan Files.FileInfo)
+	destChan := make(chan files.FileInfo)
 	go func() {
 		createDestination(infoChan, destChan, done)
 		wg.Done()
 
 	}()
-	dbChan := make(chan Files.FileInfo)
+	dbChan := make(chan files.FileInfo)
 	wg.Add(1)
 	go func() {
 		writeToDB(destChan, dbChan, done)
@@ -51,21 +41,24 @@ func buildPipe() {
 
 	}()
 }
-func walkFiles(done chan struct{}) <-chan Files.FileInfo {
-	infoChan := make(chan Files.FileInfo)
+func walkfiles(done chan struct{}) <-chan files.FileInfo {
+	infoChan := make(chan files.FileInfo)
 	go func() {
 		defer close(infoChan)
-		defer log.Info("infoChan")
-		filepath.Walk(Utils.GetConfig().Location.Src, func(path string, info os.FileInfo, err error) error {
+		filepath.Walk(utils.GetConfig().Location.Src, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
-			fileInfo := Files.FileInfo{Name: info.Name(),
+			fileInfo := files.FileInfo{Name: info.Name(),
 				Mode:    uint32(info.Mode()),
 				ModTime: info.ModTime(),
 				Size:    info.Size(),
 				IsDir:   info.IsDir(),
 				From:    path,
+			}
+			if fileInfo.IsDir {
+				log.WithFields(log.Fields{"directory": fileInfo.Name}).Debug("Parsing")
+				return nil
 			}
 			select {
 			case infoChan <- fileInfo:
@@ -78,10 +71,11 @@ func walkFiles(done chan struct{}) <-chan Files.FileInfo {
 	return infoChan
 }
 
-func createDestination(in <-chan Files.FileInfo, out chan<- Files.FileInfo, done <-chan struct{}) {
+func createDestination(in <-chan files.FileInfo, out chan<- files.FileInfo, done <-chan struct{}) {
+	defer close(out)
 	for fileInfo := range in {
 		fileDate := fileInfo.ModTime
-		destYear := Utils.GetConfig().Location.Dest + strconv.Itoa(fileDate.Year())
+		destYear := utils.GetConfig().Location.Dest + strconv.Itoa(fileDate.Year())
 		createFolder(destYear)
 		destMonth := destYear + "/" + fileDate.Month().String()
 		createFolder(destMonth)
@@ -89,37 +83,37 @@ func createDestination(in <-chan Files.FileInfo, out chan<- Files.FileInfo, done
 		select {
 		case out <- fileInfo:
 		case <-done:
-			log.Info("closed createDestination")
 			return
 		}
 	}
-	close(out)
 	log.Info("createDestination")
 }
 
-func writeToDB(in <-chan Files.FileInfo, out chan<- Files.FileInfo, done <-chan struct{}) {
+func writeToDB(in <-chan files.FileInfo, out chan<- files.FileInfo, done <-chan struct{}) {
+	defer close(out)
 	for fileInfo := range in {
-		//	fileInfo.Create(&fileInfo)
+		fileInfo.Create(&fileInfo)
 		select {
 		case out <- fileInfo:
 		case <-done:
-			log.Info("writeToDB closed")
 			return
 		}
 	}
-	close(out)
 	log.Info("writeToDB")
 }
 
-func moveFile(in <-chan Files.FileInfo) {
+func moveFile(in <-chan files.FileInfo) {
 	for fileInfo := range in {
 		if !fileInfo.IsDir {
 			fromFile := fileInfo.From
 			toFile := fileInfo.To + "/" + fileInfo.Name
 			os.Rename(fromFile, toFile)
-			log.Info("Moved :" + fromFile + " to " + toFile)
+			log.WithFields(log.Fields{
+				"from": fromFile,
+				"to":   toFile,
+			}).Info("Moved")
 		} else {
-			log.Info(" Not Moved : " + fileInfo.Name)
+			log.WithFields(log.Fields{"directory": fileInfo.Name}).Info("Not Moved")
 		}
 	}
 	log.Info("moveFile")

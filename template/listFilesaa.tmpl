@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+  <table>
+    <tr>
+      {{range .Headers}}
+      <th>
+        {{.}}
+      </th>
+      {{end}}
+    </tr>
+    {{range .FileInfos}}
+    <tr>
+      <td>
+        {{.Name}}
+      </td>
+      <td>
+        {{.Size}}
+      </td>
+      <td>
+        {{.Mode}}
+      </td>
+      <td>
+        {{.ModTime}}
+      </td>
+      <td>
+        {{.IsDir}}
+      </td>
+      <td>
+        {{.From}}
+      </td>
+      <td>
+        {{.To}}
+      </td>
+    </tr>
+    {{end}}
+  </table>
+
+</body>
+
+</html>
